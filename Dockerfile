@@ -33,6 +33,10 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Create a non-root user for security
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
+
+# Create .cache directory for static files
+RUN mkdir -p /app/.cache && chown -R appuser:appuser /app/.cache
+
 USER appuser
 
 # Expose the default FastAPI port

@@ -16,6 +16,8 @@ MAPBOX_TOKEN = os.getenv("MAPBOX_ACCESS_TOKEN")
 app = FastAPI(title="planNAV")
 
 # Mount static files
+# Ensure .cache directory exists before mounting
+os.makedirs(".cache", exist_ok=True)
 app.mount("/static/cache", StaticFiles(directory=".cache"), name="cache")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
