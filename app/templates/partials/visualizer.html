@@ -195,15 +195,39 @@
                 const theme = THEME[THEME.current];
                 const getWindowStart = (c, z) => Math.max(0, Math.min(c - (state.totalDuration / Math.pow(CONFIG.zoomFactor, z)) / 2, state.totalDuration - (state.totalDuration / Math.pow(CONFIG.zoomFactor, z))));
                 const tiers = [{ z: 0, top: 0, h: state.height * 0.33 }, { z: 1, top: state.height * 0.33, h: state.height * 0.33 }, { z: 2, top: state.height * 0.66, h: state.height * 0.34 }];
+                
                 tiers.forEach((tier, i) => {
                     const range = state.totalDuration / Math.pow(CONFIG.zoomFactor, tier.z), start = (i === 0) ? 0 : getWindowStart(state.currentTimeSec, tier.z);
                     ctx.strokeStyle = theme.grid; ctx.strokeRect(0, tier.top, state.width, tier.h);
+                    
+                    // Draw Conflict Intervals
+                    if (state.data && state.data.intervals) {
+                        state.data.intervals.forEach(interval => {
+                            const sR = interval[0] - state.startTime, eR = interval[1] - state.startTime;
+                            if (eR >= start && sR <= start + range) {
+                                const xS = Math.max(0, ((sR - start) / range) * state.width), xE = Math.min(state.width, ((eR - start) / range) * state.width);
+                                ctx.fillStyle = 'rgba(217, 83, 79, 0.25)'; ctx.fillRect(xS, tier.top, xE - xS, tier.h);
+                                ctx.fillStyle = CONFIG.colors.risk; ctx.fillRect(xS, tier.top, 1, tier.h); ctx.fillRect(xE - 1, tier.top, 1, tier.h);
+                            }
+                        });
+                    }
+
                     drawSeparationGraph(start, range, tier.top, tier.h);
+                    
                     if (state.currentTimeSec >= start && state.currentTimeSec <= start + range) {
                         const x = ((state.currentTimeSec - start) / range) * state.width;
                         ctx.strokeStyle = theme.playhead; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, tier.top); ctx.lineTo(x, tier.top + tier.h); ctx.stroke();
                     }
                 });
+
+                // Draw Connectors between tiers
+                const drawConnector = (tA, tB) => {
+                    const rA = state.totalDuration / Math.pow(CONFIG.zoomFactor, tA.z), rB = state.totalDuration / Math.pow(CONFIG.zoomFactor, tB.z);
+                    const sA = (tA.z === 0) ? 0 : getWindowStart(state.currentTimeSec, tA.z), sB = getWindowStart(state.currentTimeSec, tB.z);
+                    const x = ((sB - sA) / rA) * state.width, w = (rB / rA) * state.width;
+                    ctx.fillStyle = theme.connect; ctx.beginPath(); ctx.moveTo(x, tA.top + tA.h); ctx.lineTo(x + w, tA.top + tA.h); ctx.lineTo(state.width, tB.top); ctx.lineTo(0, tB.top); ctx.fill();
+                };
+                drawConnector(tiers[0], tiers[1]); drawConnector(tiers[1], tiers[2]);
             };
 
             const initMapLayers = () => {
@@ -225,8 +249,13 @@
             });
 
             const updateFrame = (timeOffset) => {
-                if (!state.data || !state.labels.l1 || !state.labels.l2 || !map.getSource('plane1')) return;
+                if (!state.data) return;
                 const absTime = state.startTime + timeOffset;
+                document.getElementById('time-display').innerText = new Date(absTime * 1000).toISOString().substr(11, 8);
+                renderNav();
+
+                if (!state.labels.l1 || !state.labels.l2 || !map.getSource('plane1')) return;
+                
                 const p1 = getPositionAtTime(state.data.legs1, absTime), p2 = getPositionAtTime(state.data.legs2, absTime);
 
                 const renderAircraft = (pos, srcId, marker, bubbleId, acid) => {
@@ -279,8 +308,11 @@
                 state.labels.l2 = new mapboxgl.Marker({ element: createLabel(CONFIG.acid2, CONFIG.colors.p2), offset: [0, 50] }).setLngLat([0,0,0]).addTo(map);
                 
                 map.addModel('airplane-model', CONFIG.modelUrl);
+                resize(); 
+                window.addEventListener('resize', resize);
                 initMapLayers();
-                resize(); window.addEventListener('resize', resize);
+                renderNav();
+                
                 canvas.onmousedown = (e) => { state.currentTimeSec = getTimeFromX(e.offsetX, e.offsetY); updateFrame(state.currentTimeSec); };
                 document.getElementById('play-pause').onclick = (e) => { state.isPlaying = !state.isPlaying; state.lastTimestamp = 0; e.target.innerText = state.isPlaying ? 'PAUSE' : 'PLAY'; if (state.isPlaying) window.animationFrame = requestAnimationFrame(animate); };
                 
