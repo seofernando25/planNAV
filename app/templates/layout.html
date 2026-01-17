@@ -23,7 +23,7 @@
         }
     </script>
 </head>
-<body>
+<body hx-boost="true">
     <nav class="site-nav">
         <div class="nav-container">
             <div class="nav-left">
@@ -86,6 +86,7 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% if request.url.path == "/" %}
     <footer>
         <div class="footer-content">
             <div class="footer-brand">
@@ -113,6 +114,7 @@
             <p class="footer-copyright">© 2026 planNAV // TRAJECTORY INSIGHT CHALLENGE // BUILT FOR UOTTAWAHACK8</p>
         </div>
     </footer>
+    {% endif %}
 
     <script>
         (function() {

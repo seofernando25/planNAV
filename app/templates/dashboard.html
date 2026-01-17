@@ -1,68 +1,75 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<section class="dashboard-section" style="padding-top: 4rem;">
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3rem;">
-            <div>
-                <h1 style="margin-bottom: 0.5rem;">Daily Operations Overview</h1>
-                <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">Session: 2026.01.17 // Status: <span style="color: #5cb85c;">● LIVE</span></span>
+<section class="dashboard-section" style="padding: 0; height: calc(100vh - var(--nav-height)); overflow: hidden;">
+    <div class="dashboard-layout" style="display: grid; grid-template-columns: 320px 1fr 380px; height: 100%; border-top: 1px solid var(--border-color);">
+        
+        <!-- Pane 1: System Metrics Sidebar -->
+        <aside id="metrics-sidebar" style="display: flex; flex-direction: column; border-right: 1px solid var(--border-color); background: var(--bg-surface); overflow-y: auto; padding: 1.5rem; gap: 1rem;">
+            <div style="margin-bottom: 1rem;">
+                <h3 class="mono" style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-muted);">SYSTEM OPERATIONS</h3>
+                <span class="mono" style="font-size: 0.625rem; color: #5cb85c;">● STATUS: NOMINAL</span>
             </div>
-        </div>
 
-        <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 4rem;">
-            <div class="feature-card" style="padding: 1.5rem;">
+            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
                 <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Flights</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.total_flights }}</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ stats.total_flights }}</span>
             </div>
-            <div class="feature-card" style="padding: 1.5rem;">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Passengers</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ "{:,}".format(stats.total_passengers) }}</span>
-            </div>
-            <div class="feature-card" style="padding: 1.5rem;">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Cargo Ops</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.cargo_flights }}</span>
-            </div>
-            <div class="feature-card" style="padding: 1.5rem;">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Avg Altitude</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ "{:,.0f}".format(stats.avg_altitude) }}<small style="font-size: 0.5em;">FT</small></span>
-            </div>
-            <div class="feature-card" style="padding: 1.5rem;">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Peak Congestion</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.peak_congestion }}<small style="font-size: 0.5em;">AC</small></span>
-            </div>
-            <div class="feature-card" style="padding: 1.5rem;">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Safety Score</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem; color: {{ '#d9534f' if stats.safety_score < 90 else '#5cb85c' }};">{{ stats.safety_score }}%</span>
-            </div>
-        </div>
 
-        <div style="display: flex; flex-direction: column; gap: 2rem;">
-            <div class="feature-card">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                    <h3 class="mono" style="margin: 0;">Flight Operations Schedule</h3>
-                </header>
-                <div style="overflow-x: auto;">
+            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Passengers</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ "{:,}".format(stats.total_passengers) }}</span>
+            </div>
+
+            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Cargo Ops</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ stats.cargo_flights }}</span>
+            </div>
+
+            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Avg Altitude</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ "{:,.0f}".format(stats.avg_altitude) }}<small style="font-size: 0.5em;">FT</small></span>
+            </div>
+
+            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Safety Score</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem; color: {{ '#d9534f' if stats.safety_score < 90 else '#5cb85c' }};">{{ stats.safety_score }}%</span>
+            </div>
+        </aside>
+
+        <!-- Pane 2: Flight Schedule (Main) -->
+        <main id="schedule-pane" style="display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary);">
+            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface); display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="mono" style="margin: 0; font-size: 0.875rem;">FLIGHT OPERATIONS SCHEDULE</h2>
+                <div class="mono" style="font-size: 0.625rem; color: var(--text-muted);">
+                    SESSION: 2026.01.17 // CANADIAN AIRSPACE
+                </div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+                <div class="feature-card" style="padding: 0; overflow: hidden;">
                     <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
-                        <thead>
+                        <thead style="position: sticky; top: 0; background: var(--bg-surface); z-index: 1;">
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ACID</th>
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">TYPE</th>
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ROUTE</th>
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ALT</th>
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">SPEED</th>
-                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">PASSENGERS</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-muted);">ACID</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-muted);">TYPE</th>
+                                <th style="text-align: left; padding: 1rem; color: var(--text-muted);">ROUTE</th>
+                                <th style="text-align: right; padding: 1rem; color: var(--text-muted);">ALT</th>
+                                <th style="text-align: right; padding: 1rem; color: var(--text-muted);">SPEED</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for flight in flights %}
-                            <tr style="border-bottom: 1px solid var(--grid-line);">
-                                <td style="padding: 1rem 0.5rem;">{{ flight.ACID }}</td>
-                                <td style="padding: 1rem 0.5rem;">{{ flight['Plane type'] }}</td>
-                                <td style="padding: 1rem 0.5rem;">{{ flight['departure airport'] }} → {{ flight['arrival airport'] }}</td>
-                                <td style="padding: 1rem 0.5rem;">{{ flight.altitude }} FT</td>
-                                <td style="padding: 1rem 0.5rem;">{{ flight['aircraft speed'] }} KTS</td>
-                                <td style="padding: 1rem 0.5rem;">{{ flight.passengers }}</td>
+                            <tr class="flight-row" 
+                                style="border-bottom: 1px solid var(--grid-line); cursor: pointer; transition: background 0.2s;"
+                                hx-get="/flight/{{ flight.ACID }}" 
+                                hx-target="#telemetry-pane-content"
+                                onclick="selectFlightRow(this)">
+                                <td style="padding: 1rem; font-weight: bold;">{{ flight.ACID }}</td>
+                                <td style="padding: 1rem;"><span class="badge" style="font-size: 0.625rem;">{{ flight['Plane type'] }}</span></td>
+                                <td style="padding: 1rem; color: var(--text-muted);">{{ flight['departure airport'] }} → {{ flight['arrival airport'] }}</td>
+                                <td style="padding: 1rem; text-align: right;">{{ flight.altitude }}</td>
+                                <td style="padding: 1rem; text-align: right;">{{ flight['aircraft speed'] }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -70,7 +77,7 @@
                 </div>
 
                 <!-- Pagination Controls -->
-                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--grid-line);">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; padding: 1rem;">
                     {% if page > 1 %}
                     <a href="/dashboard?page={{ page - 1 }}" class="btn" style="font-size: 0.625rem;">PREV</a>
                     {% else %}
@@ -86,7 +93,41 @@
                     {% endif %}
                 </div>
             </div>
-        </div>
+        </main>
+
+        <!-- Pane 3: Telemetry Detail -->
+        <aside id="telemetry-pane" style="display: flex; flex-direction: column; border-left: 1px solid var(--border-color); background: var(--bg-surface); overflow-y: auto;">
+            <div style="padding: 1rem; border-bottom: 1px solid var(--grid-line); background: rgba(var(--text-primary-rgb), 0.02);">
+                <h3 class="mono" style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em;">LIVE TELEMETRY</h3>
+            </div>
+            <div id="telemetry-pane-content" style="padding: 1.5rem;">
+                <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.5; text-align: center; padding-top: 4rem;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;">
+                        <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+                    </svg>
+                    <p class="mono" style="font-size: 0.75rem;">SELECT A FLIGHT FROM THE<br>SCHEDULE TO VIEW DETAILS</p>
+                </div>
+            </div>
+        </aside>
     </div>
+
+    <style>
+        .flight-row:hover {
+            background: rgba(var(--text-primary-rgb), 0.05);
+        }
+        .flight-row.selected {
+            background: rgba(var(--text-primary-rgb), 0.08);
+            box-shadow: inset 4px 0 0 var(--border-color);
+        }
+    </style>
+
+    <script>
+        function selectFlightRow(el) {
+            document.querySelectorAll('.flight-row').forEach(row => {
+                row.classList.remove('selected');
+            });
+            el.classList.add('selected');
+        }
+    </script>
 </section>
 {% endblock %}
