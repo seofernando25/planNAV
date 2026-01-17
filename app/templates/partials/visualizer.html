@@ -1,50 +1,53 @@
-<div style="display: flex; height: 800px; background: var(--bg-primary); border: 1px solid var(--border-color); overflow: hidden;">
-    <!-- Tactical Visualization (Left) -->
-    <div style="flex: 1; position: relative; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); overflow: hidden;">
+<div style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden;">
+    <!-- Tactical Visualization (Upper) -->
+    <div style="flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
         <!-- Tactical Header -->
         <div style="position: absolute; top: 1rem; left: 1rem; z-index: 10; display: flex; flex-direction: column; gap: 0.5rem;">
-            <div class="badge-industrial" style="background: var(--bg-surface); border-color: #d9534f; color: #d9534f; backdrop-filter: blur(4px);">LoS Visualization: {{ acid1 }} / {{ acid2 }}</div>
+            <div class="badge-industrial" style="background: var(--bg-surface); border-color: #d9534f; color: #d9534f; backdrop-filter: blur(4px); font-size: 0.75rem; padding: 4px 12px;">FLIGHT PATH: {{ acid1 }} / {{ acid2 }}</div>
         </div>
 
         <div id="map" style="flex: 1; width: 100%; background: var(--bg-primary);"></div>
-        
-        <!-- Harmonic Navigator -->
-        <div style="background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column;">
-            <div style="height: 140px; position: relative; cursor: crosshair; overflow: hidden; background: var(--bg-primary);">
-                <canvas id="navCanvas" style="width: 100%; height: 100%;"></canvas>
-                <div style="position: absolute; top: 5px; right: 10px; pointer-events: none; text-align: right;">
-                    <span id="time-display" class="mono" style="font-size: 0.75rem; font-weight: bold; color: var(--text-primary);">00:00:00</span>
-                    <div class="mono" style="font-size: 0.5rem; color: var(--text-muted);">GROUND ELAPSED TIME (UTC)</div>
-                </div>
-                <div style="position: absolute; bottom: 5px; left: 10px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
-                    <div class="mono" style="font-size: 0.5rem; color: #5cb85c;">--- SEPARATION (NM)</div>
-                    <div id="separation-stats" class="mono" style="font-size: 0.5rem; color: var(--text-muted);">MIN: -- | MAX: --</div>
-                </div>
+    </div>
+    
+    <!-- Harmonic Navigator (Lower) -->
+    <div style="background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0;">
+        <div style="height: 160px; position: relative; cursor: crosshair; overflow: hidden; background: var(--bg-primary);">
+            <canvas id="navCanvas" style="width: 100%; height: 100%;"></canvas>
+            <div style="position: absolute; top: 10px; right: 15px; pointer-events: none; text-align: right;">
+                <span id="time-display" class="mono" style="font-size: 0.875rem; font-weight: bold; color: var(--text-primary);">00:00:00</span>
+                <div class="mono" style="font-size: 0.5rem; color: var(--text-muted); letter-spacing: 0.1em;">ELAPSED MISSION TIME (UTC)</div>
             </div>
+            <div style="position: absolute; bottom: 10px; left: 15px; pointer-events: none; display: flex; flex-direction: column; gap: 4px;">
+                <div class="mono" style="font-size: 0.625rem; color: #5cb85c; font-weight: bold;">--- SEPARATION (NM)</div>
+                <div id="separation-stats" class="mono" style="font-size: 0.5rem; color: var(--text-muted);">MIN: -- | MAX: --</div>
+            </div>
+        </div>
 
-            <div style="padding: 1rem; border-top: 1px solid var(--grid-line); display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-                <div style="display: flex; gap: 0.5rem;">
-                    <button id="play-pause" class="btn" style="width: 80px; font-size: 0.625rem; font-weight: bold;">PLAY</button>
-                    <button id="go-to-p1" class="btn" style="font-size: 0.625rem; font-weight: bold;">CENTER {{ acid1 }}</button>
-                    <button id="go-to-p2" class="btn" style="font-size: 0.625rem; font-weight: bold;">CENTER {{ acid2 }}</button>
+        <div style="padding: 1rem; border-top: 1px solid var(--grid-line); display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button id="play-pause" class="btn" style="width: 80px; font-size: 0.625rem; font-weight: bold;">PLAY</button>
+                <div class="divider" style="height: 20px; width: 1px; background: var(--border-color); margin: 0 0.5rem;"></div>
+                <button id="go-to-p1" class="btn" style="font-size: 0.625rem; font-weight: bold;">{{ acid1 }}</button>
+                <button id="go-to-p2" class="btn" style="font-size: 0.625rem; font-weight: bold;">{{ acid2 }}</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; flex: 1; max-width: 600px;">
+                <div id="readout-1" class="mono" style="font-size: 0.625rem; background: rgba(92, 184, 92, 0.1); padding: 4px 8px; border: 1px solid rgba(92, 184, 92, 0.3);">
+                    <span style="color: var(--text-muted);">{{ acid1 }}:</span> <span class="val" style="font-weight: bold;">---</span>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; flex: 1; max-width: 600px;">
-                    <div id="readout-1" class="mono" style="font-size: 0.625rem;">
-                        <span style="color: var(--text-muted);">{{ acid1 }}:</span> <span class="val">---</span>
-                    </div>
-                    <div id="readout-2" class="mono" style="font-size: 0.625rem;">
-                        <span style="color: var(--text-muted);">{{ acid2 }}:</span> <span class="val">---</span>
-                    </div>
-                    <div id="readout-dist" class="mono" style="font-size: 0.625rem;">
-                        <span style="color: var(--text-muted);">SEP:</span> <span class="val">---</span>
-                    </div>
-                    <div id="readout-alt" class="mono" style="font-size: 0.625rem;">
-                        <span style="color: var(--text-muted);">V-Δ:</span> <span class="val">---</span>
-                    </div>
+                <div id="readout-2" class="mono" style="font-size: 0.625rem; background: rgba(240, 173, 78, 0.1); padding: 4px 8px; border: 1px solid rgba(240, 173, 78, 0.3);">
+                    <span style="color: var(--text-muted);">{{ acid2 }}:</span> <span class="val" style="font-weight: bold;">---</span>
+                </div>
+                <div id="readout-dist" class="mono" style="font-size: 0.625rem; padding: 4px 8px; border: 1px solid var(--border-color);">
+                    <span style="color: var(--text-muted);">SEP:</span> <span class="val" style="font-weight: bold;">---</span>
+                </div>
+                <div id="readout-alt" class="mono" style="font-size: 0.625rem; padding: 4px 8px; border: 1px solid var(--border-color);">
+                    <span style="color: var(--text-muted);">V-Δ:</span> <span class="val" style="font-weight: bold;">---</span>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
 
     <script>
         (function() {

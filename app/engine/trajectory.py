@@ -103,6 +103,8 @@ class FlightEngine:
             "CYXE": (52.17, -106.70),
         }
         self.legs = self._precalculate_legs()
+        self._cached_conflicts = None
+        self._cached_stats = None
 
     def parse_waypoint(self, wp_str):
         # Format: 49.97N/110.935W
@@ -198,6 +200,9 @@ class FlightEngine:
 
     def find_conflicts(self):
         """Find all conflicts across all flights."""
+        if self._cached_conflicts is not None:
+            return self._cached_conflicts
+
         conflicts = []
         # Group legs by flight
         flight_legs = {}
@@ -226,6 +231,8 @@ class FlightEngine:
 
                 # Calculate true min distance for the whole flight
                 min_dist = 9999.0
+                conflict_lat = 0.0
+                conflict_lon = 0.0
                 legs1 = flight_legs[acid1]
                 legs2 = flight_legs[acid2]
 
@@ -290,7 +297,40 @@ class FlightEngine:
                     }
                 )
 
+        self._cached_conflicts = conflicts
         return conflicts
+
+    def get_stats(self):
+        """Returns pre-calculated statistics for the dashboard."""
+        if self._cached_stats is not None:
+            return self._cached_stats
+
+        df = pd.DataFrame(self.flights)
+        conflicts = self.find_conflicts()
+
+        # Calculate peak congestion
+        trajectories = [
+            self.calculate_trajectory(f, interval_sec=600) for f in self.flights
+        ]
+        all_points = [p for t in trajectories for p in t]
+        time_series = pd.DataFrame(all_points).groupby("time").size()
+        peak_congestion = int(time_series.max()) if not time_series.empty else 0
+
+        # Calculate safety score
+        unique_conflicts_count = len(
+            {tuple(sorted([c["acid1"], c["acid2"]])) for c in conflicts}
+        )
+        safety_score = max(0, 100 - (unique_conflicts_count / len(df) * 100))
+
+        self._cached_stats = {
+            "total_flights": len(df),
+            "total_passengers": int(df["passengers"].sum()),
+            "cargo_flights": int(df["is_cargo"].sum()),
+            "avg_altitude": round(df["altitude"].mean(), 0),
+            "peak_congestion": peak_congestion,
+            "safety_score": round(safety_score, 1),
+        }
+        return self._cached_stats
 
     def check_pair_conflict(self, f1, f2):
         legs1 = self._calculate_legs_for_flight(f1)

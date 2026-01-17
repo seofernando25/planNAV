@@ -1,0 +1,300 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="hotspots-section" style="padding:0 ; height: calc(100vh - var(--nav-height)); position: relative; overflow: hidden;">
+    <!-- Sidebar Stats -->
+    <div style="position: absolute; top: 1rem; left: 1rem; z-index: 10; width: 320px; display: flex; flex-direction: column; gap: 1rem;">
+        <div class="feature-card" style="padding: 1.5rem; backdrop-filter: blur(10px); background: rgba(var(--bg-surface-rgb), 0.8);">
+            <h2 class="mono" style="margin: 0 0 0.5rem 0; font-size: 1.25rem;">Airspace Hotspots</h2>
+            <p class="mono" style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Heatmap weighted by separation severity (LoS Intensity).</p>
+        </div>
+
+        <div class="feature-card" style="padding: 1.25rem; backdrop-filter: blur(10px); background: rgba(var(--bg-surface-rgb), 0.8);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <span class="mono" style="font-size: 0.75rem; font-weight: bold;">TEMPORAL FILTER</span>
+                <label class="mono" style="font-size: 0.625rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="all-time-toggle" checked> ALL TIME
+                </label>
+            </div>
+            
+            <div id="time-slider-container" style="opacity: 0.5; pointer-events: none; transition: opacity 0.2s;">
+                <input type="range" id="time-slider" min="0" max="86400" value="0" style="width: 100%; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between;" class="mono">
+                    <span id="current-time-display" style="font-size: 0.75rem; font-weight: bold;">00:00:00 UTC</span>
+                    <span style="font-size: 0.625rem; color: var(--text-muted);">+/- 1H WINDOW</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="hotspot-stats" class="feature-card" style="padding: 1.25rem; backdrop-filter: blur(10px); background: rgba(var(--bg-surface-rgb), 0.8);">
+            <h3 class="mono" style="font-size: 0.75rem; margin-top: 0; border-bottom: 1px solid var(--grid-line); padding-bottom: 0.5rem;">REGIONAL DENSITY</h3>
+            <div id="density-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                <!-- Filled by JS -->
+                <div class="mono" style="font-size: 0.625rem; color: var(--text-muted);">Analyzing spatial clusters...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map" style="width: 100%; height: 100%; background: var(--bg-primary);"></div>
+
+    <style>
+        :root {
+            --bg-surface-rgb: 255, 255, 255;
+        }
+        .dark {
+            --bg-surface-rgb: 32, 32, 33;
+        }
+        
+        #time-slider {
+            -webkit-appearance: none;
+            height: 4px;
+            background: var(--border-color);
+            outline: none;
+            border-radius: 2px;
+        }
+        #time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            cursor: pointer;
+            border-radius: 0;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+
+    <script>
+        mapboxgl.accessToken = '{{ mapbox_token }}';
+        
+        const THEME = {
+            get current() { return document.documentElement.classList.contains('dark') ? 'dark' : 'light'; },
+            dark: 'mapbox://styles/mapbox/dark-v11',
+            light: 'mapbox://styles/mapbox/light-v11'
+        };
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: THEME[THEME.current],
+            center: [-97, 55],
+            zoom: 3.5,
+            pitch: 0,
+            antialias: true
+        });
+
+        let rawData = null;
+        const TIME_WINDOW = 3600; // 1 hour window
+
+        map.on('load', async () => {
+            const response = await fetch('/api/hotspots-data');
+            rawData = await response.json();
+
+            map.addSource('conflicts', {
+                type: 'geojson',
+                data: rawData
+            });
+
+            // Add heatmap layer
+            map.addLayer({
+                id: 'conflict-heat',
+                type: 'heatmap',
+                source: 'conflicts',
+                maxzoom: 9,
+                paint: {
+                    // Increase weight based on severity property
+                    'heatmap-weight': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'weight'],
+                        0, 0,
+                        1, 1
+                    ],
+                    // Increase intensity as zoom level increases
+                    'heatmap-intensity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 1,
+                        9, 3
+                    ],
+                    // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                    // Beginning color (0) must be transparent.
+                    'heatmap-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['heatmap-density'],
+                        0, 'rgba(33,102,172,0)',
+                        0.2, 'rgb(103,169,207)',
+                        0.4, 'rgb(209,229,240)',
+                        0.6, 'rgb(253,219,199)',
+                        0.8, 'rgb(239,138,98)',
+                        1, 'rgb(178,24,43)'
+                    ],
+                    // Adjust radius by zoom level
+                    'heatmap-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 2,
+                        9, 20
+                    ],
+                    // Transition from heatmap to circle layer by zoom level
+                    'heatmap-opacity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        7, 1,
+                        9, 0
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'conflict-point',
+                type: 'circle',
+                source: 'conflicts',
+                minzoom: 7,
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'weight'],
+                        0.1, 3,
+                        1, 8
+                    ],
+                    'circle-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'weight'],
+                        0.1, 'rgb(103,169,207)',
+                        1, 'rgb(178,24,43)'
+                    ],
+                    'circle-stroke-color': 'white',
+                    'circle-stroke-width': 1,
+                    'circle-opacity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        7, 0,
+                        8, 1
+                    ]
+                }
+            });
+
+            updateDensityList(rawData.features);
+            setupInteractions();
+        });
+
+        function setupInteractions() {
+            const slider = document.getElementById('time-slider');
+            const toggle = document.getElementById('all-time-toggle');
+            const sliderContainer = document.getElementById('time-slider-container');
+            const timeDisplay = document.getElementById('current-time-display');
+
+            // Set slider range based on actual data
+            if (rawData.features.length > 0) {
+                const times = rawData.features.map(f => f.properties.time);
+                slider.min = Math.min(...times);
+                slider.max = Math.max(...times);
+                slider.value = slider.min;
+            }
+
+            const filterData = () => {
+                if (toggle.checked) {
+                    map.setFilter('conflict-heat', null);
+                    map.setFilter('conflict-point', null);
+                    sliderContainer.style.opacity = '0.5';
+                    sliderContainer.style.pointerEvents = 'none';
+                    updateDensityList(rawData.features);
+                } else {
+                    const val = parseInt(slider.value);
+                    const timeStr = new Date(val * 1000).toISOString().substr(11, 8);
+                    timeDisplay.innerText = `${timeStr} UTC`;
+                    
+                    const filter = [
+                        'all',
+                        ['>=', ['get', 'time'], val - TIME_WINDOW],
+                        ['<=', ['get', 'time'], val + TIME_WINDOW]
+                    ];
+                    map.setFilter('conflict-heat', filter);
+                    map.setFilter('conflict-point', filter);
+                    sliderContainer.style.opacity = '1';
+                    sliderContainer.style.pointerEvents = 'auto';
+
+                    const filteredFeatures = rawData.features.filter(f => 
+                        f.properties.time >= val - TIME_WINDOW && 
+                        f.properties.time <= val + TIME_WINDOW
+                    );
+                    updateDensityList(filteredFeatures);
+                }
+            };
+
+            slider.addEventListener('input', filterData);
+            toggle.addEventListener('change', filterData);
+
+            // Click to inspect points
+            map.on('click', 'conflict-point', (e) => {
+                const props = e.features[0].properties;
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <div class="mono" style="padding: 0.5rem;">
+                            <strong style="color: #d9534f;">LoS EVENT</strong><br>
+                            ${props.acid1} ↔ ${props.acid2}<br>
+                            SEP: ${parseFloat(props.dist).toFixed(2)} NM<br>
+                            TIME: ${new Date(props.time * 1000).toISOString().substr(11, 8)}
+                        </div>
+                    `)
+                    .addTo(map);
+            });
+
+            map.on('mouseenter', 'conflict-point', () => map.getCanvas().style.cursor = 'pointer');
+            map.on('mouseleave', 'conflict-point', () => map.getCanvas().style.cursor = '');
+        }
+
+        function updateDensityList(features) {
+            const list = document.getElementById('density-list');
+            if (features.length === 0) {
+                list.innerHTML = '<div class="mono" style="font-size: 0.625rem; color: var(--text-muted);">No conflicts in window.</div>';
+                return;
+            }
+
+            // Simple regional grouping (by rounding lat/lon)
+            const regions = {};
+            features.forEach(f => {
+                // Approximate major hub regions
+                const lon = f.geometry.coordinates[0];
+                const lat = f.geometry.coordinates[1];
+                let regionName = "En-Route Airspace";
+                
+                if (lon > -81 && lon < -78 && lat > 43 && lat < 45) regionName = "Toronto (YYZ) Sector";
+                else if (lon > -75 && lon < -72 && lat > 44 && lat < 46) regionName = "Montreal (YUL) Sector";
+                else if (lon > -124 && lon < -122 && lat > 48 && lat < 50) regionName = "Vancouver (YVR) Sector";
+                else if (lon > -115 && lon < -113 && lat > 50 && lat < 52) regionName = "Calgary (YYC) Sector";
+                else if (lon > -98 && lon < -96 && lat > 49 && lat < 51) regionName = "Winnipeg (YWG) Sector";
+
+                regions[regionName] = (regions[regionName] || 0) + 1;
+            });
+
+            const sorted = Object.entries(regions).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            
+            list.innerHTML = sorted.map(([name, count]) => `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="mono" style="font-size: 0.625rem;">${name}</span>
+                    <span class="badge" style="font-size: 0.625rem; background: ${count > 5 ? '#d9534f' : 'var(--border-color)'}; color: white; padding: 2px 6px;">${count}</span>
+                </div>
+                <div style="width: 100%; height: 2px; background: var(--grid-line); margin-top: -4px;">
+                    <div style="width: ${(count / features.length * 100)}%; height: 100%; background: var(--text-primary);"></div>
+                </div>
+            `).join('');
+        }
+
+        // Theme observer
+        const observer = new MutationObserver(() => {
+            map.setStyle(THEME[THEME.current]);
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    </script>
+</section>
+{% endblock %}

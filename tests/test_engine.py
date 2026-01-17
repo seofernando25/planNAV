@@ -40,7 +40,29 @@ def test_analytical_time_slice():
     leg_b = Leg("ACID_B", (45.0, -74.8), (45.0, -75.2), 0, speed, 30000)
 
     engine = FlightEngine("data/canadian_flights_250.json")
-    engine.legs = [leg_a, leg_b]
+    engine.flights = [
+        {
+            "ACID": "ACID_A",
+            "altitude": 30000,
+            "departure airport": "CYOW",
+            "arrival airport": "CYUL",
+            "route": "45.0N/75.0W",
+            "aircraft speed": 300,
+            "departure time": 0,
+        },
+        {
+            "ACID": "ACID_B",
+            "altitude": 30000,
+            "departure airport": "CYUL",
+            "arrival airport": "CYOW",
+            "route": "45.0N/75.0W",
+            "aircraft speed": 300,
+            "departure time": 0,
+        },
+    ]
+    # We need to ensure the legs generated from these flights will collide.
+    # FlightEngine._precalculate_legs() will use these flights.
+    engine.legs = engine._precalculate_legs()
 
     conflicts = engine.find_conflicts()
     assert len(conflicts) == 1

@@ -26,6 +26,11 @@ DATA_FILE = "data/canadian_flights_250.json"
 engine = FlightEngine(DATA_FILE)
 spotter = SpotterEngine()
 
+# Pre-compute expensive data on startup
+print("Initializing Flight Engine data (Conflicts & Stats)...")
+engine.get_stats()
+print("Initialization complete.")
+
 
 @app.get("/")
 async def read_root(request: Request):
@@ -34,32 +39,8 @@ async def read_root(request: Request):
 
 @app.get("/dashboard")
 async def dashboard(request: Request, page: int = 1):
-    # Basic statistics
-    df = pd.DataFrame(engine.flights)
-
-    # Calculate peak congestion (max flights in air simultaneously)
-    trajectories = [
-        engine.calculate_trajectory(f, interval_sec=600) for f in engine.flights
-    ]
-    all_points = [p for t in trajectories for p in t]
-    time_series = pd.DataFrame(all_points).groupby("time").size()
-    peak_congestion = int(time_series.max()) if not time_series.empty else 0
-
-    # Calculate safety score
-    conflicts = engine.find_conflicts()
-    unique_conflicts_count = len(
-        {tuple(sorted([c["acid1"], c["acid2"]])) for c in conflicts}
-    )
-    safety_score = max(0, 100 - (unique_conflicts_count / len(df) * 100))
-
-    stats = {
-        "total_flights": len(df),
-        "total_passengers": int(df["passengers"].sum()),
-        "cargo_flights": int(df["is_cargo"].sum()),
-        "avg_altitude": round(df["altitude"].mean(), 0),
-        "peak_congestion": peak_congestion,
-        "safety_score": round(safety_score, 1),
-    }
+    # Use cached stats from engine
+    stats = engine.get_stats()
 
     # Pagination
     per_page = 20

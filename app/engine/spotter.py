@@ -91,10 +91,14 @@ class SpotterEngine:
                 return None
 
             img_tag = photo_card.find("img")
-            if not img_tag or not img_tag.get("src"):
+            if not img_tag:
                 return None
 
-            img_url = img_tag["src"]
+            src = img_tag.get("src")
+            if not src or not isinstance(src, str):
+                return None
+
+            img_url: str = src
 
             # Save image
             slug = plane_type.lower().replace(" ", "-").replace("/", "-")

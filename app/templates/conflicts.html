@@ -1,71 +1,61 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<section class="conflicts-section" style="padding-top: 4rem;">
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3rem;">
-            <div>
-                <h1 style="margin-bottom: 0.5rem;">Conflict Analysis</h1>
-                <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">STATUS: ANALYSIS COMPLETE // SEPARATION: 5NM / 2000FT</span>
+<section class="conflicts-section" style="padding:0 ; height: calc(100vh - var(--nav-height)); overflow: hidden; padding: 0;">
+    <div class="conflicts-layout" style="display: grid; grid-template-columns: 320px 1fr 380px; height: 100%; border-top: 1px solid var(--border-color);">
+        <!-- Pane 1: Master Sidebar -->
+        <aside id="conflict-sidebar" style="display: flex; flex-direction: column; border-right: 1px solid var(--border-color); background: var(--bg-surface); overflow: hidden;">
+            <div style="padding: 1rem; border-bottom: 1px solid var(--grid-line); background: rgba(217, 83, 79, 0.05);">
+                <h3 class="mono" style="color: #d9534f; margin: 0; font-size: 0.75rem; letter-spacing: 0.1em;">{{ conflicts|length }} LoS EVENTS DETECTED</h3>
+                <input type="text" id="conflict-filter" placeholder="FILTER CALLSIGNS..." 
+                       style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem; font-family: var(--font-mono); font-size: 0.625rem; outline: none; margin-top: 0.75rem;"
+                       onkeyup="filterConflicts()">
             </div>
-        </div>
 
-        <div class="conflicts-layout" style="display: grid; grid-template-columns: 380px 1fr; gap: 2rem; align-items: start;">
-            <!-- Master Sidebar -->
-            <aside id="conflict-sidebar" style="position: sticky; top: calc(var(--nav-height) + 1rem); height: calc(100vh - var(--nav-height) - 3rem); display: flex; flex-direction: column; gap: 1rem;">
-                <div class="feature-card" style="border-color: #d9534f; background-color: rgba(217, 83, 79, 0.05); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; flex-shrink: 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 class="mono" style="color: #d9534f; margin: 0; font-size: 1rem;">{{ conflicts|length }} LoS Events</h3>
-                    </div>
-                    
-                    <input type="text" id="conflict-filter" placeholder="FILTER CALLSIGNS..." 
-                           style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem; outline: none;"
-                           onkeyup="filterConflicts()">
-                </div>
-
-                <div id="conflict-list" style="flex: 1; overflow-y: auto; display: grid; gap: 0.75rem; padding-right: 0.5rem; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;">
-                    {% if conflicts %}
-                        {% for c in conflicts %}
-                        <div class="conflict-card feature-card" 
-                             data-acids="{{ c.acid1 }} {{ c.acid2 }}"
-                             style="padding: 1rem; border-color: {{ '#d9534f' if initial_analysis and ((initial_analysis.acid1 == c.acid1 and initial_analysis.acid2 == c.acid2) or (initial_analysis.acid1 == c.acid2 and initial_analysis.acid2 == c.acid1)) else 'var(--border-color)' }}; transition: all 0.2s; cursor: pointer; background: var(--bg-surface);" 
-                             onclick="selectConflict(this)"
-                             hx-get="/analyze-conflict/{{ c.acid1 }}/{{ c.acid2 }}" hx-target="#detail-view" hx-push-url="/conflicts/{{ c.acid1 }}/{{ c.acid2 }}">
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <span class="mono" style="font-weight: 700; font-size: 0.875rem;">{{ c.acid1 }} ↔ {{ c.acid2 }}</span>
-                                <span class="badge" style="background: #d9534f; color: white; border: none; font-size: 0.625rem; padding: 2px 6px;">LoS</span>
-                            </div>
-                            
-                            <div style="display: flex; gap: 1rem; font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted);">
-                                <span>MIN: <span style="color: var(--text-primary);">{{ c.dist|round(2) }} NM</span></span>
-                                <span>ΔALT: <span style="color: var(--text-primary);">{{ c.alt_diff }} FT</span></span>
-                            </div>
+            <div id="conflict-list" style="flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                {% if conflicts %}
+                    {% for c in conflicts %}
+                    <div class="conflict-card feature-card" 
+                         data-acids="{{ c.acid1 }} {{ c.acid2 }}"
+                         style="padding: 0.75rem; border-color: {{ '#d9534f' if initial_analysis and ((initial_analysis.acid1 == c.acid1 and initial_analysis.acid2 == c.acid2) or (initial_analysis.acid1 == c.acid2 and initial_analysis.acid2 == c.acid1)) else 'var(--border-color)' }}; transition: all 0.2s; cursor: pointer; background: var(--bg-surface); flex-shrink: 0;" 
+                         onclick="selectConflict(this)"
+                         hx-get="/analyze-conflict/{{ c.acid1 }}/{{ c.acid2 }}" hx-target="#immersive-bridge" hx-push-url="/conflicts/{{ c.acid1 }}/{{ c.acid2 }}">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <span class="mono" style="font-weight: 700; font-size: 0.75rem;">{{ c.acid1 }} ↔ {{ c.acid2 }}</span>
+                            <span class="badge" style="background: #d9534f; color: white; border: none; font-size: 0.5rem; padding: 1px 4px;">LoS</span>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div style="text-align: center; padding: 2rem 0;">
-                            <p class="mono" style="color: #5cb85c; font-size: 0.75rem;">[ NO CONFLICTS ]</p>
+                        
+                        <div style="display: flex; gap: 0.75rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--text-muted);">
+                            <span>MIN: <span style="color: var(--text-primary);">{{ c.dist|round(2) }} NM</span></span>
+                            <span>ΔALT: <span style="color: var(--text-primary);">{{ c.alt_diff }} FT</span></span>
                         </div>
-                    {% endif %}
-                </div>
-            </aside>
-
-            <!-- Detail Analysis View -->
-            <div id="detail-view" style="min-width: 0;">
-                {% if initial_analysis %}
-                <div hx-get="/analyze-conflict/{{ initial_analysis.acid1 }}/{{ initial_analysis.acid2 }}" hx-trigger="load" hx-swap="outerHTML">
-                    <div class="feature-card" style="padding: 3rem; text-align: center; border-style: dashed; opacity: 0.6;">
-                        <p class="mono" style="font-size: 0.875rem;">LOADING ANALYSIS...</p>
                     </div>
-                </div>
+                    {% endfor %}
                 {% else %}
-                <div class="feature-card" style="padding: 3rem; text-align: center; border-style: dashed; opacity: 0.6;">
-                    <p class="mono" style="font-size: 0.875rem;">SELECT A CONFLICT PAIR TO BEGIN ANALYSIS</p>
-                </div>
+                    <div style="text-align: center; padding: 2rem 0;">
+                        <p class="mono" style="color: #5cb85c; font-size: 0.625rem;">[ NO CONFLICTS ]</p>
+                    </div>
                 {% endif %}
             </div>
+        </aside>
+
+        <!-- Container for Center & Right Panes (Bridge) -->
+        <div id="immersive-bridge" style="display: contents;">
+            {% if initial_analysis %}
+            <div hx-get="/analyze-conflict/{{ initial_analysis.acid1 }}/{{ initial_analysis.acid2 }}" hx-trigger="load" hx-swap="outerHTML">
+                <div style="grid-column: span 2; display: flex; align-items: center; justify-content: center; background: var(--bg-primary);">
+                    <p class="mono" style="font-size: 0.75rem; opacity: 0.5;">INITIALIZING TACTICAL DATA...</p>
+                </div>
+            </div>
+            {% else %}
+            <div style="grid-column: 2; display: flex; align-items: center; justify-content: center; background: var(--bg-primary);">
+                <p class="mono" style="font-size: 0.75rem; opacity: 0.5;">SELECT LoS EVENT FROM RADAR LIST</p>
+            </div>
+            <div style="grid-column: 3; border-left: 1px solid var(--border-color); background: var(--bg-surface);"></div>
+            {% endif %}
         </div>
+    </div>
 
         <script>
             function filterConflicts() {
@@ -90,6 +80,5 @@
                 el.style.borderColor = '#d9534f';
             }
         </script>
-    </div>
 </section>
 {% endblock %}

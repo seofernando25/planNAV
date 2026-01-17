@@ -1,11 +1,16 @@
-<div style="display: flex; flex-direction: column; gap: 2rem;">
-    <!-- LoS Visualization -->
-    <div id="visualizer-container">
+<div style="display: contents;">
+    <!-- Center Pane: Visualization -->
+    <div id="center-pane" style="height: 100%; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary);">
         {% include "partials/visualizer.html" %}
     </div>
 
-    <!-- Flight Info Side-by-Side -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    <!-- Right Pane: Details -->
+    <div id="right-pane" style="height: 100%; overflow-y: auto; background: var(--bg-surface); padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+        <div style="border-bottom: 1px solid var(--grid-line); padding-bottom: 1rem;">
+            <h2 class="mono" style="margin: 0; font-size: 1.25rem;">Flight Profiles</h2>
+            <span class="mono" style="font-size: 0.625rem; color: var(--text-muted);">SYSTEM STATUS: TRACKING ACTIVE</span>
+        </div>
+
         <div id="flight1-detail">
             {% with flight=flight1, legs_count=legs1_count %}{% include "partials/flight_detail.html" %}{% endwith %}
         </div>
