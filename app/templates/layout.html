@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}planNAV{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/images/logo.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body>
+    <nav class="site-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/" class="logo">
+                    <img src="/static/images/logo.png" alt="planNAV" class="logo-image">
+                    <span class="logo-text">planNAV</span>
+                </a>
+
+                <div class="desktop-menu">
+                    <a href="/dashboard" class="menu-item {% if request.url.path == '/dashboard' %}nav-highlight{% endif %}">
+                        <span class="menu-number">01</span>
+                        <span class="menu-label">Overview</span>
+                    </a>
+                    <a href="/conflicts" class="menu-item {% if request.url.path == '/conflicts' %}nav-highlight{% endif %}">
+                        <span class="menu-number">02</span>
+                        <span class="menu-label">Conflicts</span>
+                    </a>
+                    <a href="/hotspots" class="menu-item {% if request.url.path == '/hotspots' %}nav-highlight{% endif %}">
+                        <span class="menu-number">03</span>
+                        <span class="menu-label">Hotspots</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="cta-buttons">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <!-- Icon inserted by JS -->
+                </button>
+
+                <div class="divider"></div>
+
+                <a href="https://github.com/planNAV" class="cta-link" aria-label="GitHub">GITHUB</a>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Open menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="mobile-menu" id="mobile-menu">
+            <a href="/dashboard" class="mobile-menu-link {% if request.url.path == '/dashboard' %}nav-highlight{% endif %}">01 Overview</a>
+            <a href="/conflicts" class="mobile-menu-link {% if request.url.path == '/conflicts' %}nav-highlight{% endif %}">02 Conflicts</a>
+            <a href="/hotspots" class="mobile-menu-link {% if request.url.path == '/hotspots' %}nav-highlight{% endif %}">03 Hotspots</a>
+            <a href="https://github.com/planNAV" class="mobile-menu-link">04 Github</a>
+            
+            <div class="mobile-divider"></div>
+            
+            <div class="mobile-theme-row">
+                <span class="mobile-theme-label">Theme</span>
+                <button class="mobile-theme-btn" id="mobile-theme-toggle">
+                    <!-- Icon inserted by JS -->
+                </button>
+            </div>
+
+            <a href="mailto:contact@plannav.tech" class="mobile-menu-link">Contact</a>
+        </div>
+    </nav>
+
+    <main style="padding-top: var(--nav-height);">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <img src="/static/images/logo.png" alt="planNAV" class="footer-logo">
+                <div class="footer-socials">
+                </div>
+            </div>
+
+            <div class="footer-links">
+                <div class="footer-column">
+                    <span class="footer-column-label">Platform</span>
+                    <a href="/dashboard" class="footer-link">Overview</a>
+                    <a href="/conflicts" class="footer-link">Conflicts</a>
+                    <a href="/hotspots" class="footer-link">Hotspots</a>
+                </div>
+                <div class="footer-column">
+                    <span class="footer-column-label">Company</span>
+                    <a href="#" class="footer-link">About</a>
+                    <a href="#" class="footer-link">Blog</a>
+                    <a href="#" class="footer-link">Contact</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p class="footer-copyright">© 2026 planNAV // TRAJECTORY INSIGHT CHALLENGE // BUILT FOR UOTTAWAHACK8</p>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            const mobileThemeBtn = document.getElementById('mobile-theme-toggle');
+            const mobileToggle = document.getElementById('mobile-menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            const sunIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+            const moonIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+
+            function updateIcons() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const icon = isDark ? sunIcon : moonIcon;
+                if (toggleBtn) toggleBtn.innerHTML = icon;
+                if (mobileThemeBtn) mobileThemeBtn.innerHTML = icon;
+            }
+
+            updateIcons();
+
+            const handleThemeToggle = () => {
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    localStorage.theme = 'light';
+                } else {
+                    html.classList.add('dark');
+                    localStorage.theme = 'dark';
+                }
+                updateIcons();
+            };
+
+            if (toggleBtn) toggleBtn.addEventListener('click', handleThemeToggle);
+            if (mobileThemeBtn) mobileThemeBtn.addEventListener('click', handleThemeToggle);
+
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('open');
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

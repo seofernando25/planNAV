@@ -1,0 +1,21 @@
+<div class="feature-card" style="border-color: #d9534f; background-color: rgba(217, 83, 79, 0.05);">
+    <h4 class="mono" style="color: #d9534f; margin-bottom: 1.5rem;">{{ conflicts|length }} Conflicts Identified</h4>
+    {% if conflicts %}
+    <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+        {% for c in conflicts %}
+        <div class="feature-card" style="margin-bottom: 1rem; padding: 1rem; border-color: rgba(217, 83, 79, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="mono" style="font-weight: 700; font-size: 0.875rem;">{{ c.acid1 }} ↔ {{ c.acid2 }}</span>
+                <span class="badge" style="background: #d9534f; color: white; border: none;">LoS RISK</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted); margin-top: 0.75rem; display: flex; gap: 1rem;">
+                <span>DIST: {{ c.dist|round(2) }} NM</span>
+                <span>ALT Δ: {{ c.alt_diff }} FT</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="mono" style="font-size: 0.75rem; color: #5cb85c;">[ NO LOSS-OF-SEPARATION DETECTED ]</p>
+    {% endif %}
+</div>

@@ -1,0 +1,16 @@
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+    <!-- LoS Visualization -->
+    <div id="visualizer-container">
+        {% include "partials/visualizer.html" %}
+    </div>
+
+    <!-- Flight Info Side-by-Side -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div id="flight1-detail">
+            {% with flight=flight1, legs_count=legs1_count %}{% include "partials/flight_detail.html" %}{% endwith %}
+        </div>
+        <div id="flight2-detail">
+            {% with flight=flight2, legs_count=legs2_count %}{% include "partials/flight_detail.html" %}{% endwith %}
+        </div>
+    </div>
+</div>

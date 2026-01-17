@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="dashboard-section" style="padding-top: 4rem;">
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3rem;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">Daily Operations Overview</h1>
+                <span class="mono" style="font-size: 0.75rem; color: var(--text-muted);">Session: 2026.01.17 // Status: <span style="color: #5cb85c;">● LIVE</span></span>
+            </div>
+        </div>
+
+        <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 4rem;">
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Flights</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.total_flights }}</span>
+            </div>
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Passengers</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ "{:,}".format(stats.total_passengers) }}</span>
+            </div>
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Cargo Ops</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.cargo_flights }}</span>
+            </div>
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Avg Altitude</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ "{:,.0f}".format(stats.avg_altitude) }}<small style="font-size: 0.5em;">FT</small></span>
+            </div>
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Peak Congestion</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem;">{{ stats.peak_congestion }}<small style="font-size: 0.5em;">AC</small></span>
+            </div>
+            <div class="feature-card" style="padding: 1.5rem;">
+                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Safety Score</span>
+                <span class="stat-value" style="font-family: var(--font-mono); font-size: 2rem; display: block; margin-top: 0.5rem; color: {{ '#d9534f' if stats.safety_score < 90 else '#5cb85c' }};">{{ stats.safety_score }}%</span>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <div class="feature-card">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 class="mono" style="margin: 0;">Flight Operations Schedule</h3>
+                </header>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ACID</th>
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">TYPE</th>
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ROUTE</th>
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">ALT</th>
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">SPEED</th>
+                                <th style="text-align: left; padding: 1rem 0.5rem; color: var(--text-muted);">PASSENGERS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in flights %}
+                            <tr style="border-bottom: 1px solid var(--grid-line);">
+                                <td style="padding: 1rem 0.5rem;">{{ flight.ACID }}</td>
+                                <td style="padding: 1rem 0.5rem;">{{ flight['Plane type'] }}</td>
+                                <td style="padding: 1rem 0.5rem;">{{ flight['departure airport'] }} → {{ flight['arrival airport'] }}</td>
+                                <td style="padding: 1rem 0.5rem;">{{ flight.altitude }} FT</td>
+                                <td style="padding: 1rem 0.5rem;">{{ flight['aircraft speed'] }} KTS</td>
+                                <td style="padding: 1rem 0.5rem;">{{ flight.passengers }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--grid-line);">
+                    {% if page > 1 %}
+                    <a href="/dashboard?page={{ page - 1 }}" class="btn" style="font-size: 0.625rem;">PREV</a>
+                    {% else %}
+                    <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">PREV</span>
+                    {% endif %}
+
+                    <span class="mono" style="font-size: 0.75rem;">PAGE {{ page }} OF {{ total_pages }}</span>
+
+                    {% if page < total_pages %}
+                    <a href="/dashboard?page={{ page + 1 }}" class="btn" style="font-size: 0.625rem;">NEXT</a>
+                    {% else %}
+                    <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">NEXT</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

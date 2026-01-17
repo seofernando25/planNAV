@@ -1,0 +1,105 @@
+/* 1. Core Variables & Reset */
+:root {
+    --bg-primary: #efede5;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f5f5f5;
+    --text-primary: #1a1a1b;
+    --text-muted: #595959;
+    --border-color: #634936;
+    --grid-line: rgba(99, 73, 54, 0.1);
+    --selection-bg: #1a1a1b;
+    --selection-text: #efede5;
+
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 4rem;
+
+    --font-primary: 'Inter', system-ui, sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --nav-height: 4rem;
+}
+
+html.dark {
+    --bg-primary: #1a1a1b;
+    --bg-surface: #202021;
+    --bg-surface-hover: #2a2a2b;
+    --text-primary: #efede5;
+    --text-muted: #a3a393;
+    --border-color: #634936;
+    --grid-line: #2a2a2b;
+    --selection-bg: #efede5;
+    --selection-text: #1a1a1b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-color);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: var(--border-color) var(--bg-primary);
+}
+
+a { color: inherit; text-decoration: none; transition: opacity 0.2s; }
+a:hover { opacity: 0.8; }
+
+h1, h2, h3, h4 { line-height: 1.2; margin-bottom: var(--space-sm); }
+
+.bg-grid {
+    position: absolute;
+    inset: 0;
+    background-size: 40px 40px;
+    background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    transition: background-color 0.2s;
+    background-color: var(--text-primary);
+    opacity: 0.05;
+}

@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<header class="hero-header">
+    <div class="bg-grid"></div>
+    <div class="hero-content">
+        <div class="badge-container" style="justify-content: center;">
+            <span class="badge-text">v0.1.0 Operational</span>
+            <div class="badge-line"></div>
+        </div>
+        <h1>
+            Trajectory <br> <span class="hero-muted">Management.</span>
+        </h1>
+        <p class="hero-subtitle">
+            Air traffic planning platform for the National Flight Planning Center. 
+            Analyze trajectories and detect planned conflicts.
+        </p>
+        <div class="cta-container">
+            <a href="/dashboard" class="cta-button">
+                Launch Overview
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+            <a href="#features" class="btn">Learn More</a>
+        </div>
+    </div>
+</header>
+
+<section class="marquee-section">
+    <div class="marquee">
+        <div class="marquee-set">
+            <span class="marquee-item">AIRSPACE MONITORING</span>
+            <span class="marquee-item">CYYZ TRAFFIC +12%</span>
+            <span class="marquee-item">TRAJECTORY ANALYSIS LIVE</span>
+            <span class="marquee-item">LOS DETECTION ENGINE v0.1.0</span>
+            <span class="marquee-item">SECTOR 4 CONGESTION HIGH</span>
+            <span class="marquee-item">SYSTEM STATUS: NOMINAL</span>
+        </div>
+        <div class="marquee-set">
+            <span class="marquee-item">AIRSPACE MONITORING</span>
+            <span class="marquee-item">CYYZ TRAFFIC +12%</span>
+            <span class="marquee-item">TRAJECTORY ANALYSIS LIVE</span>
+            <span class="marquee-item">LOS DETECTION ENGINE v0.1.0</span>
+            <span class="marquee-item">SECTOR 4 CONGESTION HIGH</span>
+            <span class="marquee-item">SYSTEM STATUS: NOMINAL</span>
+        </div>
+    </div>
+</section>
+
+<section id="features">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-title-container">
+                <h2>System <span class="muted">Features.</span></h2>
+            </div>
+        </div>
+        
+        <div class="feature-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div class="feature-card">
+                <header>
+                    <span class="badge">Trajectory Engine</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                </header>
+                <h3 class="mono">4D Trajectories</h3>
+                <p>Synthesizing great-circle paths with temporal projection for comprehensive airspace visibility across all Canadian sectors.</p>
+            </div>
+            <div class="feature-card">
+                <header>
+                    <span class="badge">Safety Protocol</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </header>
+                <h3 class="mono">Conflict Detection</h3>
+                <p>Automated LoS identification using optimized spatial indexing. Detects separation losses under 5nm and 2000ft vertical delta.</p>
+            </div>
+            <div class="feature-card">
+                <header>
+                    <span class="badge">Visualization</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </header>
+                <h3 class="mono">LoS Visualization</h3>
+                <p>4D tactical visualization with integrated aircraft imagery and separation monitoring.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

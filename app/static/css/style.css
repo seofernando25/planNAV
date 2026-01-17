@@ -1,0 +1,16 @@
+/* OhRats Design System - Entry Point */
+
+/* 1. Core Variables & Reset */
+@import "modules/1-base.css";
+
+/* 2. Global Layout (Nav, Footer) */
+@import "modules/2-layout.css";
+
+/* 3. Atomic Components (Buttons, Cards) */
+@import "modules/3-components.css";
+
+/* 4. Page Sections (Hero, Lab, Blog) */
+@import "modules/4-sections.css";
+
+/* 5. Utilities (Spacing, State) */
+@import "modules/5-utils.css";

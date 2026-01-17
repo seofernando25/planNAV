@@ -1,0 +1,354 @@
+<div style="display: flex; height: 800px; background: var(--bg-primary); border: 1px solid var(--border-color); overflow: hidden;">
+    <!-- Tactical Visualization (Left) -->
+    <div style="flex: 1; position: relative; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); overflow: hidden;">
+        <!-- Tactical Header -->
+        <div style="position: absolute; top: 1rem; left: 1rem; z-index: 10; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="badge-industrial" style="background: var(--bg-surface); border-color: #d9534f; color: #d9534f; backdrop-filter: blur(4px);">LoS Visualization: {{ acid1 }} / {{ acid2 }}</div>
+        </div>
+
+        <div id="map" style="flex: 1; width: 100%; background: var(--bg-primary);"></div>
+        
+        <!-- Harmonic Navigator -->
+        <div style="background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column;">
+            <div style="height: 140px; position: relative; cursor: crosshair; overflow: hidden; background: var(--bg-primary);">
+                <canvas id="navCanvas" style="width: 100%; height: 100%;"></canvas>
+                <div style="position: absolute; top: 5px; right: 10px; pointer-events: none; text-align: right;">
+                    <span id="time-display" class="mono" style="font-size: 0.75rem; font-weight: bold; color: var(--text-primary);">00:00:00</span>
+                    <div class="mono" style="font-size: 0.5rem; color: var(--text-muted);">GROUND ELAPSED TIME (UTC)</div>
+                </div>
+                <div style="position: absolute; bottom: 5px; left: 10px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
+                    <div class="mono" style="font-size: 0.5rem; color: #5cb85c;">--- SEPARATION (NM)</div>
+                    <div id="separation-stats" class="mono" style="font-size: 0.5rem; color: var(--text-muted);">MIN: -- | MAX: --</div>
+                </div>
+            </div>
+
+            <div style="padding: 1rem; border-top: 1px solid var(--grid-line); display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="play-pause" class="btn" style="width: 80px; font-size: 0.625rem; font-weight: bold;">PLAY</button>
+                    <button id="go-to-p1" class="btn" style="font-size: 0.625rem; font-weight: bold;">CENTER {{ acid1 }}</button>
+                    <button id="go-to-p2" class="btn" style="font-size: 0.625rem; font-weight: bold;">CENTER {{ acid2 }}</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; flex: 1; max-width: 600px;">
+                    <div id="readout-1" class="mono" style="font-size: 0.625rem;">
+                        <span style="color: var(--text-muted);">{{ acid1 }}:</span> <span class="val">---</span>
+                    </div>
+                    <div id="readout-2" class="mono" style="font-size: 0.625rem;">
+                        <span style="color: var(--text-muted);">{{ acid2 }}:</span> <span class="val">---</span>
+                    </div>
+                    <div id="readout-dist" class="mono" style="font-size: 0.625rem;">
+                        <span style="color: var(--text-muted);">SEP:</span> <span class="val">---</span>
+                    </div>
+                    <div id="readout-alt" class="mono" style="font-size: 0.625rem;">
+                        <span style="color: var(--text-muted);">V-Δ:</span> <span class="val">---</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            if (window.currentTacticalMap) window.currentTacticalMap.remove();
+            if (window.animationFrame) cancelAnimationFrame(window.animationFrame);
+
+            const CONFIG = {
+                token: "{{ mapbox_token }}",
+                acid1: "{{ acid1 }}",
+                acid2: "{{ acid2 }}",
+                modelUrl: 'https://docs.mapbox.com/mapbox-gl-js/assets/airplane.glb',
+                colors: { p1: '#5cb85c', p2: '#f0ad4e', risk: '#d9534f' },
+                zoomFactor: 10
+            };
+
+            const THEME = {
+                get current() { return document.documentElement.classList.contains('dark') ? 'dark' : 'light'; },
+                dark: {
+                    mapStyle: 'mapbox://styles/mapbox/dark-v11',
+                    grid: '#333',
+                    playhead: '#fff',
+                    connect: 'rgba(255, 255, 255, 0.05)',
+                    labelBg: 'rgba(0, 0, 0, 0.85)'
+                },
+                light: {
+                    mapStyle: 'mapbox://styles/mapbox/light-v11',
+                    grid: 'rgba(99, 73, 54, 0.2)',
+                    playhead: '#1a1a1b',
+                    connect: 'rgba(99, 73, 54, 0.05)',
+                    labelBg: 'rgba(255, 255, 255, 0.85)'
+                }
+            };
+
+            mapboxgl.accessToken = CONFIG.token;
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: THEME[THEME.current].mapStyle,
+                center: [-97, 55], zoom: 3, pitch: 45, bearing: -17, antialias: true, projection: 'mercator'
+            });
+            
+            window.currentTacticalMap = map;
+
+            let state = {
+                data: null, isPlaying: false, lastTimestamp: 0,
+                currentTimeSec: 0, startTime: 0, totalDuration: 0,
+                separationData: [], labels: { l1: null, l2: null },
+                width: 0, height: 0, dpr: window.devicePixelRatio || 1
+            };
+
+            const canvas = document.getElementById('navCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- 2. Continuous Math (Ground Truth) ---
+            const toRad = (d) => d * Math.PI / 180;
+            const toDeg = (r) => r * 180 / Math.PI;
+
+            const interpolatePosition = (start, end, fraction) => {
+                if (fraction <= 0) return { lon: start[0], lat: start[1] };
+                if (fraction >= 1) return { lon: end[0], lat: end[1] };
+                
+                const lat1 = toRad(start[1]), lon1 = toRad(start[0]);
+                const lat2 = toRad(end[1]), lon2 = toRad(end[0]);
+                
+                const d = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin((lat1 - lat2) / 2), 2) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin((lon1 - lon2) / 2), 2)));
+                if (d === 0) return { lon: start[0], lat: start[1] };
+
+                const A = Math.sin((1 - fraction) * d) / Math.sin(d);
+                const B = Math.sin(fraction * d) / Math.sin(d);
+                
+                const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+                const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+                const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+                
+                return { lat: toDeg(Math.atan2(z, Math.sqrt(x*x + y*y))), lon: toDeg(Math.atan2(y, x)) };
+            };
+
+            const getPositionAtTime = (legs, absTime) => {
+                const leg = legs.find(l => absTime >= l.t0 && absTime <= l.t1) || (absTime < legs[0].t0 ? legs[0] : legs[legs.length - 1]);
+                const fraction = Math.max(0, Math.min(1, (absTime - leg.t0) / (leg.t1 - leg.t0 || 1)));
+                const pos = interpolatePosition(leg.start, leg.end, fraction);
+                
+                // Calculate bearing for model rotation
+                const nextTime = absTime + 1;
+                const nextFraction = Math.max(0, Math.min(1, (nextTime - leg.t0) / (leg.t1 - leg.t0 || 1)));
+                const nextPos = interpolatePosition(leg.start, leg.end, nextFraction);
+                
+                const lat1 = toRad(pos.lat), lat2 = toRad(nextPos.lat), dLon = toRad(nextPos.lon - pos.lon);
+                const bearing = (Math.atan2(Math.sin(dLon) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)) * 180 / Math.PI + 360) % 360;
+
+                return { ...pos, alt: leg.alt, bearing };
+            };
+
+            const haversine = (lat1, lon1, lat2, lon2) => {
+                const R = 3440.06;
+                const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+                const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            };
+
+            const createCircle = (center, radiusNm) => {
+                const points = 64, coords = [], km = radiusNm * 1.852;
+                for (let i = 0; i < points; i++) {
+                    const a = (i / points) * (2 * Math.PI);
+                    coords.push([center[0] + (km * Math.cos(a) / (111.32 * Math.cos(center[1] * Math.PI / 180))), center[1] + (km * Math.sin(a) / 111.32)]);
+                }
+                coords.push(coords[0]); return [coords];
+            };
+
+            function createLabel(acid, color) {
+                const el = document.createElement('div');
+                el.className = 'tactical-label';
+                const theme = THEME[THEME.current];
+                el.style.cssText = `color: ${color}; background: ${theme.labelBg}; padding: 4px 8px; border: 1px solid ${color}; font-family: var(--font-mono); font-size: 11px; white-space: nowrap; pointer-events: none; border-radius: 2px;`;
+                el.innerHTML = `<strong>${acid}</strong><br><span class="label-data" style="font-size: 9px; opacity: 0.8;">---</span>`;
+                return el;
+            }
+
+            const resize = () => {
+                state.width = canvas.clientWidth;
+                state.height = canvas.clientHeight;
+                canvas.width = state.width * state.dpr;
+                canvas.height = state.height * state.dpr;
+                ctx.scale(state.dpr, state.dpr);
+            };
+
+            const getWindowStart = (centerTime, zoomLevel) => {
+                const range = state.totalDuration / Math.pow(CONFIG.zoomFactor, zoomLevel);
+                return Math.max(0, Math.min(centerTime - range / 2, state.totalDuration - range));
+            };
+
+            const getTimeFromX = (x, y) => {
+                const relX = x / state.width;
+                const tiers = [state.height * 0.33, state.height * 0.66, state.height];
+                if (y < tiers[0]) return relX * state.totalDuration;
+                if (y < tiers[1]) return getWindowStart(state.currentTimeSec, 1) + relX * (state.totalDuration / CONFIG.zoomFactor);
+                return getWindowStart(state.currentTimeSec, 2) + relX * (state.totalDuration / Math.pow(CONFIG.zoomFactor, 2));
+            };
+
+            const drawSeparationGraph = (start, duration, top, height) => {
+                if (state.separationData.length === 0) return;
+                const samples = 200;
+                const maxVal = Math.max(...state.separationData, 10);
+                ctx.beginPath();
+                ctx.strokeStyle = '#5cb85c';
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i <= samples; i++) {
+                    const progress = i / samples;
+                    const tAbs = state.startTime + start + progress * duration;
+                    const idx = ((tAbs - state.startTime) / state.totalDuration) * (state.separationData.length - 1);
+                    const i0 = Math.max(0, Math.min(state.separationData.length - 1, Math.floor(idx))), i1 = Math.max(0, Math.min(state.separationData.length - 1, Math.ceil(idx))), f = idx - i0;
+                    const d = state.separationData[i0] * (1-f) + state.separationData[i1] * f;
+                    const y = top + height - (d / maxVal) * height * 0.8 - 5;
+                    if (i === 0) ctx.moveTo(progress * state.width, y); else ctx.lineTo(progress * state.width, y);
+                }
+                ctx.stroke();
+                const y5nm = top + height - (5 / maxVal) * height * 0.8 - 5;
+                ctx.strokeStyle = CONFIG.colors.risk;
+                ctx.setLineDash([5, 5]); ctx.globalAlpha = 0.5;
+                ctx.beginPath(); ctx.moveTo(0, y5nm); ctx.lineTo(state.width, y5nm); ctx.stroke();
+                ctx.setLineDash([]); ctx.globalAlpha = 1.0;
+            };
+
+            const renderNav = () => {
+                ctx.clearRect(0, 0, state.width, state.height);
+                const theme = THEME[THEME.current];
+                const tiers = [{ zoom: 0, top: 0, h: state.height * 0.33 }, { zoom: 1, top: state.height * 0.33, h: state.height * 0.33 }, { zoom: 2, top: state.height * 0.66, h: state.height * 0.34 }];
+                tiers.forEach((tier, i) => {
+                    const range = state.totalDuration / Math.pow(CONFIG.zoomFactor, tier.zoom), start = (i === 0) ? 0 : getWindowStart(state.currentTimeSec, tier.zoom);
+                    ctx.strokeStyle = theme.grid; ctx.strokeRect(0, tier.top, state.width, tier.h);
+                    drawSeparationGraph(start, range, tier.top, tier.h);
+                    if (state.data.intervals) {
+                        state.data.intervals.forEach(interval => {
+                            const sR = interval[0] - state.startTime, eR = interval[1] - state.startTime;
+                            if (eR >= start && sR <= start + range) {
+                                const xS = Math.max(0, ((sR - start) / range) * state.width), xE = Math.min(state.width, ((eR - start) / range) * state.width);
+                                ctx.fillStyle = 'rgba(217, 83, 79, 0.4)'; ctx.fillRect(xS, tier.top, xE - xS, tier.h);
+                                ctx.fillStyle = CONFIG.colors.risk; ctx.fillRect(xS, tier.top, 1, tier.h); ctx.fillRect(xE - 1, tier.top, 1, tier.h);
+                            }
+                        });
+                    }
+                    if (state.currentTimeSec >= start && state.currentTimeSec <= start + range) {
+                        const x = ((state.currentTimeSec - start) / range) * state.width;
+                        ctx.strokeStyle = theme.playhead; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, tier.top); ctx.lineTo(x, tier.top + tier.h); ctx.stroke();
+                    }
+                });
+                const drawConnector = (tA, tB) => {
+                    const rA = state.totalDuration / Math.pow(CONFIG.zoomFactor, tA.zoom), rB = state.totalDuration / Math.pow(CONFIG.zoomFactor, tB.zoom);
+                    const sA = (tA.zoom === 0) ? 0 : getWindowStart(state.currentTimeSec, tA.zoom), sB = getWindowStart(state.currentTimeSec, tB.zoom);
+                    const x = ((sB - sA) / rA) * state.width, w = (rB / rA) * state.width;
+                    ctx.fillStyle = theme.connect; ctx.beginPath(); ctx.moveTo(x, tA.top + tA.h); ctx.lineTo(x + w, tA.top + tA.h); ctx.lineTo(state.width, tB.top); ctx.lineTo(0, tB.top); ctx.fill();
+                };
+                drawConnector(tiers[0], tiers[1]); drawConnector(tiers[1], tiers[2]);
+            };
+
+            const updateFrame = (timeOffset) => {
+                if (!state.data || !state.labels.l1 || !state.labels.l2) return;
+                const absTime = state.startTime + timeOffset;
+                
+                const p1 = getPositionAtTime(state.data.legs1, absTime);
+                const p2 = getPositionAtTime(state.data.legs2, absTime);
+
+                const renderAircraft = (pos, srcId, marker, bubbleId, acid) => {
+                    const altM = pos.alt * 0.3048;
+                    if (map.getSource(srcId)) map.getSource(srcId).setData({ 'type': 'Feature', 'geometry': { 'type': 'Point', 'coordinates': [pos.lon, pos.lat, altM] }, 'properties': { 'bearing': pos.bearing, 'altitude': altM, 'acid': acid }});
+                    if (map.getSource(bubbleId + '-src')) map.getSource(bubbleId + '-src').setData({ 'type': 'Feature', 'geometry': { 'type': 'Polygon', 'coordinates': createCircle([pos.lon, pos.lat], 2.5) }, 'properties': { 'base_height': (pos.alt-1000)*0.3048, 'height': (pos.alt+1000)*0.3048 }});
+                    marker.setLngLat([pos.lon, pos.lat, altM]);
+                    marker.getElement().querySelector('.label-data').innerText = `${Math.round(pos.alt)} FT | HDG ${Math.round(pos.bearing)}°`;
+                };
+
+                renderAircraft(p1, 'plane1', state.labels.l1, 'plane1-bubble', CONFIG.acid1);
+                renderAircraft(p2, 'plane2', state.labels.l2, 'plane2-bubble', CONFIG.acid2);
+
+                const d = haversine(p1.lat, p1.lon, p2.lat, p2.lon), ad = Math.abs(p1.alt - p2.alt);
+                document.querySelector('#readout-1 .val').innerText = `${Math.round(p1.alt)}FT`;
+                document.querySelector('#readout-2 .val').innerText = `${Math.round(p2.alt)}FT`;
+                document.querySelector('#readout-dist .val').innerText = `${d.toFixed(2)}NM`;
+                document.querySelector('#readout-dist .val').style.color = d < 5 ? CONFIG.colors.risk : CONFIG.colors.p1;
+                document.querySelector('#readout-alt .val').innerText = `${Math.round(ad)}FT`;
+                document.querySelector('#readout-alt .val').style.color = ad < 2000 ? CONFIG.colors.risk : CONFIG.colors.p1;
+                document.getElementById('time-display').innerText = new Date(absTime * 1000).toISOString().substr(11, 8);
+                renderNav();
+            };
+
+            const animate = (ts) => {
+                if (!state.isPlaying) return;
+                if (!state.lastTimestamp) state.lastTimestamp = ts;
+                const delta = ts - state.lastTimestamp;
+                state.lastTimestamp = ts;
+                state.currentTimeSec += (delta / 1000) * 10;
+                if (state.currentTimeSec >= state.totalDuration) { state.currentTimeSec = 0; state.isPlaying = false; document.getElementById('play-pause').innerText = 'PLAY'; }
+                updateFrame(state.currentTimeSec);
+                window.animationFrame = requestAnimationFrame(animate);
+            };
+
+            const loadData = async () => {
+                const res = await fetch(`/api/conflict-data/${CONFIG.acid1}/${CONFIG.acid2}`);
+                state.data = await res.json();
+                if (state.data.error) return;
+                
+                state.startTime = Math.min(state.data.legs1[0].t0, state.data.legs2[0].t0);
+                state.totalDuration = Math.max(state.data.legs1.slice(-1)[0].t1, state.data.legs2.slice(-1)[0].t1) - state.startTime;
+                
+                state.separationData = [];
+                const samples = 1000; // High res graph
+                for (let i = 0; i <= samples; i++) {
+                    const t = (i / samples) * state.totalDuration + state.startTime;
+                    const p1 = getPositionAtTime(state.data.legs1, t);
+                    const p2 = getPositionAtTime(state.data.legs2, t);
+                    state.separationData.push(haversine(p1.lat, p1.lon, p2.lat, p2.lon));
+                }
+                const minS = Math.min(...state.separationData), maxS = Math.max(...state.separationData);
+                document.getElementById('separation-stats').innerText = `MIN: ${minS.toFixed(1)} NM | MAX: ${maxS.toFixed(1)} NM`;
+                updateFrame(state.currentTimeSec);
+            };
+
+            map.on('load', async () => {
+                await loadData();
+                state.labels.l1 = new mapboxgl.Marker({ element: createLabel(CONFIG.acid1, CONFIG.colors.p1), offset: [0, 50] }).setLngLat([0,0,0]).addTo(map);
+                state.labels.l2 = new mapboxgl.Marker({ element: createLabel(CONFIG.acid2, CONFIG.colors.p2), offset: [0, 50] }).setLngLat([0,0,0]).addTo(map);
+                resize(); window.addEventListener('resize', resize);
+                canvas.onmousedown = (e) => { state.currentTimeSec = getTimeFromX(e.offsetX, e.offsetY); updateFrame(state.currentTimeSec); };
+                document.getElementById('play-pause').onclick = (e) => { state.isPlaying = !state.isPlaying; state.lastTimestamp = 0; e.target.innerText = state.isPlaying ? 'PAUSE' : 'PLAY'; if (state.isPlaying) window.animationFrame = requestAnimationFrame(animate); };
+                
+                document.getElementById('go-to-p1').onclick = () => {
+                    const pos = getPositionAtTime(state.data.legs1, state.startTime + state.currentTimeSec);
+                    const cam = map.getFreeCameraOptions();
+                    // Offset by ~3 NM (0.05 degrees) and 5000m altitude for a better perspective
+                    cam.position = mapboxgl.MercatorCoordinate.fromLngLat([pos.lon - 0.05, pos.lat - 0.05], (pos.alt * 0.3048) + 50000);
+                    cam.lookAtPoint([pos.lon, pos.lat, pos.alt * 0.3048]);
+                    map.setFreeCameraOptions(cam);
+                };
+                
+                document.getElementById('go-to-p2').onclick = () => {
+                    const pos = getPositionAtTime(state.data.legs2, state.startTime + state.currentTimeSec);
+                    const cam = map.getFreeCameraOptions();
+                    cam.position = mapboxgl.MercatorCoordinate.fromLngLat([pos.lon - 0.05, pos.lat - 0.05], (pos.alt * 0.3048) + 50000);
+                    cam.lookAtPoint([pos.lon, pos.lat, pos.alt * 0.3048]);
+                    map.setFreeCameraOptions(cam);
+                };
+                
+                map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun': [0.0, 0.0], 'sky-atmosphere-sun-intensity': 15 }});
+                map.addModel('airplane-model', CONFIG.modelUrl);
+                const setupAircraft = (id, color) => {
+                    map.addSource(id, { 'type': 'geojson', 'data': { 'type': 'Feature', 'geometry': { 'type': 'Point', 'coordinates': [0, 0, 0] }, 'properties': { 'bearing': 0, 'altitude': 0, 'acid': '' }}});
+                    map.addSource(id + '-bubble-src', { 'type': 'geojson', 'data': { 'type': 'Feature', 'geometry': { 'type': 'Polygon', 'coordinates': [[]] }, 'properties': { 'base_height': 0, 'height': 0 }}});
+                    map.addLayer({ 'id': id + '-bubble-layer', 'type': 'fill-extrusion', 'source': id + '-bubble-src', 'paint': { 'fill-extrusion-color': color, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.2 }});
+                    map.addLayer({ 'id': id + '-model', 'type': 'model', 'source': id, 'layout': { 'model-id': 'airplane-model' }, 'paint': { 'model-scale': ['interpolate', ['linear'], ['zoom'], 0, [1200, 1200, 1200], 5, [800, 800, 800], 10, [250, 250, 250], 15, [60, 60, 60]], 'model-rotation': [0, 0, ['+', ['get', 'bearing'], 90]], 'model-translation': [0, 0, ['get', 'altitude']] }});
+                };
+                setupAircraft('plane1', CONFIG.colors.p1); setupAircraft('plane2', CONFIG.colors.p2);
+                updateFrame(0);
+
+                // --- Theme Observer ---
+                const observer = new MutationObserver(() => {
+                    const theme = THEME[THEME.current];
+                    map.setStyle(theme.mapStyle);
+                    if (state.labels.l1) state.labels.l1.getElement().style.background = theme.labelBg;
+                    if (state.labels.l2) state.labels.l2.getElement().style.background = theme.labelBg;
+                    renderNav();
+                });
+                observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+            });
+        })();
+    </script>
+    <style> 
+    .tactical-label { pointer-events: none; z-index: 100;  }
+     #navCanvas { image-rendering: pixelated; } </style>
+</div>
