@@ -54,6 +54,29 @@
             border-radius: 0;
             border: 1px solid var(--border-color);
         }
+
+        /* Mapbox Popup Theming */
+        .mapboxgl-popup-content {
+            background: var(--bg-surface) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: 4px 4px 0 var(--border-color) !important;
+        }
+        .mapboxgl-popup-tip {
+            border-top-color: var(--border-color) !important;
+            border-bottom-color: var(--border-color) !important;
+        }
+        .mapboxgl-popup-close-button {
+            color: var(--text-primary) !important;
+            font-size: 1.25rem;
+            padding: 4px 8px;
+        }
+        .mapboxgl-popup-close-button:hover {
+            background: transparent !important;
+            color: var(--text-muted) !important;
+        }
     </style>
 
     <script>
@@ -193,11 +216,19 @@
                     new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(`
-                            <div class="mono" style="padding: 0.5rem;">
-                                <strong style="color: #d9534f;">LoS EVENT</strong><br>
-                                ${props.acid1} ↔ ${props.acid2}<br>
-                                SEP: ${parseFloat(props.dist).toFixed(2)} NM<br>
-                                TIME: ${new Date(props.time * 1000).toISOString().substr(11, 8)}
+                            <div class="mono" style="padding: 1rem; min-width: 180px;">
+                                <div style="color: #d9534f; font-weight: 700; font-size: 0.625rem; letter-spacing: 0.1em; margin-bottom: 0.5rem; border-bottom: 1px solid var(--grid-line); padding-bottom: 0.25rem;">LoS EVENT DETECTED</div>
+                                <div style="font-size: 0.875rem; font-weight: 700; margin-bottom: 0.75rem;">${props.acid1} ↔ ${props.acid2}</div>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.625rem;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);">SEPARATION:</span>
+                                        <span style="font-weight: 700;">${parseFloat(props.dist).toFixed(2)} NM</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-muted);">TIME (UTC):</span>
+                                        <span style="font-weight: 700;">${new Date(props.time * 1000).toISOString().substr(11, 8)}</span>
+                                    </div>
+                                </div>
                             </div>
                         `)
                         .addTo(map);
