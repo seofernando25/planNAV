@@ -326,6 +326,31 @@
                 document.getElementById('go-to-p2').onclick = () => cameraFly(getPositionAtTime(state.data.legs2, state.startTime + state.currentTimeSec));
             });
 
+            window.showGhostTrajectory = (legs) => {
+                if (!map.getSource('ghost-src')) {
+                    map.addSource('ghost-src', { 'type': 'geojson', 'data': { 'type': 'FeatureCollection', 'features': [] }});
+                    map.addLayer({
+                        'id': 'ghost-layer',
+                        'type': 'line',
+                        'source': 'ghost-src',
+                        'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                        'paint': { 'line-color': '#5cb85c', 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.6 }
+                    });
+                }
+                const coordinates = legs.map(l => [l.start[0], l.start[1]]);
+                coordinates.push([legs[legs.length-1].end[0], legs[legs.length-1].end[1]]);
+                map.getSource('ghost-src').setData({
+                    'type': 'Feature',
+                    'geometry': { 'type': 'LineString', 'coordinates': coordinates }
+                });
+            };
+
+            window.hideGhostTrajectory = () => {
+                if (map.getSource('ghost-src')) {
+                    map.getSource('ghost-src').setData({ 'type': 'FeatureCollection', 'features': [] });
+                }
+            };
+
             let lastTheme = THEME.current;
             const themeCheck = new MutationObserver(() => {
                 if (lastTheme !== THEME.current) {

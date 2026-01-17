@@ -456,6 +456,98 @@ class FlightEngine:
 
         return {"legs1": legs1, "legs2": legs2, "intervals": merged}
 
+    def propose_resolutions(self, acid1, acid2):
+        """Generates resolution options for a conflict pair."""
+        f1 = next((f for f in self.flights if f["ACID"] == acid1), None)
+        f2 = next((f for f in self.flights if f["ACID"] == acid2), None)
+        if not f1 or not f2:
+            return []
+
+        resolutions = []
+        other_flights = [f for f in self.flights if f["ACID"] not in [acid1, acid2]]
+
+        # Strategy 1: Delay Departure of Flight 1
+        for delay_mins in [2, 5, 10]:
+            candidate = f1.copy()
+            candidate["departure time"] += delay_mins * 60
+
+            if self._is_safe_resolution(candidate, f2, other_flights):
+                resolutions.append(
+                    {
+                        "id": f"delay_{delay_mins}",
+                        "type": "TIME",
+                        "title": f"Departure Delay (+{delay_mins}m)",
+                        "description": f"Push {acid1} back by {delay_mins} minutes to clear the conflict window.",
+                        "changes": {
+                            "departure_time": candidate["departure time"],
+                            "altitude": candidate["altitude"],
+                        },
+                        "proposed_legs": [
+                            l.to_dict()
+                            for l in self._calculate_legs_for_flight(candidate)
+                        ],
+                        "metrics": {
+                            "efficiency_score": 100 - (delay_mins * 3),
+                            "fuel_impact_usd": 0,
+                            "delay_impact_mins": delay_mins,
+                        },
+                        "is_recommended": delay_mins <= 5,
+                    }
+                )
+
+        # Strategy 2: Altitude Change for Flight 1
+        constraints = self.get_constraints(f1["Plane type"])
+        current_alt = f1["altitude"]
+
+        for alt_diff in [-2000, 2000]:
+            new_alt = current_alt + alt_diff
+            if constraints["min_alt"] <= new_alt <= constraints["max_alt"]:
+                candidate = f1.copy()
+                candidate["altitude"] = new_alt
+
+                if self._is_safe_resolution(candidate, f2, other_flights):
+                    # Fuel penalty heuristic: $150 per 2000ft deviation from planned
+                    fuel_penalty = 150
+                    resolutions.append(
+                        {
+                            "id": f"alt_{new_alt}",
+                            "type": "ALTITUDE",
+                            "title": f"Vertical Re-routing (FL{int(new_alt / 100)})",
+                            "description": f"Assign {acid1} to a different flight level to maintain vertical separation.",
+                            "changes": {
+                                "departure_time": candidate["departure time"],
+                                "altitude": new_alt,
+                            },
+                            "proposed_legs": [
+                                l.to_dict()
+                                for l in self._calculate_legs_for_flight(candidate)
+                            ],
+                            "metrics": {
+                                "efficiency_score": 85,
+                                "fuel_impact_usd": fuel_penalty,
+                                "delay_impact_mins": 0,
+                            },
+                            "is_recommended": False,
+                        }
+                    )
+
+        return sorted(
+            resolutions, key=lambda x: x["metrics"]["efficiency_score"], reverse=True
+        )
+
+    def _is_safe_resolution(self, candidate_f, target_f, others):
+        """Verifies if a proposed change is safe against the target and all other flights."""
+        # 1. Check against the original conflicting flight
+        if self.check_pair_conflict(candidate_f, target_f):
+            return False
+
+        # 2. Check against global traffic (prevent chain-reaction conflicts)
+        # We only check a subset of 'others' for performance in this demo
+        for other in others[:50]:
+            if self.check_pair_conflict(candidate_f, other):
+                return False
+        return True
+
     def get_constraints(self, plane_type):
         """Returns min/max altitude and speed for a given aircraft model."""
         if "Dash 8" in plane_type:

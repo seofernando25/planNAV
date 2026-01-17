@@ -110,6 +110,33 @@ async def get_conflict_data(acid1: str, acid2: str):
     return data
 
 
+@app.get("/api/resolutions/{acid1}/{acid2}")
+async def get_resolutions(acid1: str, acid2: str):
+    resolutions = engine.propose_resolutions(acid1, acid2)
+    return {"acid1": acid1, "acid2": acid2, "proposals": resolutions}
+
+
+@app.post("/api/apply-fix/{acid}")
+async def apply_fix(acid: str, request: Request):
+    data = await request.json()
+    # Find flight and apply changes
+    for f in engine.flights:
+        if f["ACID"] == acid:
+            if "departure_time" in data:
+                f["departure time"] = data["departure_time"]
+            if "altitude" in data:
+                f["altitude"] = data["altitude"]
+            break
+
+    # Re-calculate engine data
+    engine.legs = engine._precalculate_legs()
+    engine._cached_conflicts = None
+    engine._cached_stats = None
+    engine.get_stats()  # Trigger re-calc
+
+    return {"status": "success"}
+
+
 @app.get("/analyze-conflict/{acid1}/{acid2}")
 async def analyze_conflict(request: Request, acid1: str, acid2: str):
     f1 = next((f for f in engine.flights if f["ACID"] == acid1), None)
