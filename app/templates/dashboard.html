@@ -39,16 +39,24 @@
 
         <!-- Pane 2: Flight Schedule (Main) -->
         <main id="schedule-pane" style="display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary);">
-            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface); display: flex; justify-content: space-between; align-items: center;">
-                <h2 class="mono" style="margin: 0; font-size: 0.875rem;">FLIGHT OPERATIONS SCHEDULE</h2>
-                <div class="mono" style="font-size: 0.625rem; color: var(--text-muted);">
-                    SESSION: 2026.01.17 // CANADIAN AIRSPACE
+            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 class="mono" style="margin: 0; font-size: 0.875rem;">FLIGHT OPERATIONS SCHEDULE</h2>
+                    <div class="mono" style="font-size: 0.625rem; color: var(--text-muted);">
+                        SESSION: 2026.01.17 // CANADIAN AIRSPACE
+                    </div>
+                </div>
+                <!-- Search Filter -->
+                <div style="position: relative;">
+                    <input type="text" id="flight-search" placeholder="FILTER BY ACID, TYPE, OR ROUTE..." 
+                           style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.625rem 1rem; font-family: var(--font-mono); font-size: 0.625rem; outline: none;"
+                           onkeyup="filterFlights()">
                 </div>
             </div>
 
-            <div style="flex: 1; overflow-y: auto; padding: 1.5rem;">
-                <div class="feature-card" style="padding: 0; overflow: hidden;">
-                    <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
+            <div style="flex: 1; overflow-y: auto;">
+                <div class="feature-card" style="padding: 0; overflow: hidden; border: none;">
+                    <table id="flight-table" style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
                         <thead style="position: sticky; top: 0; background: var(--bg-surface); z-index: 1;">
                             <tr style="border-bottom: 1px solid var(--border-color);">
                                 <th style="text-align: left; padding: 1rem; color: var(--text-muted);">ACID</th>
@@ -75,23 +83,23 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                <!-- Pagination Controls -->
-                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; padding: 1rem;">
-                    {% if page > 1 %}
-                    <a href="/dashboard?page={{ page - 1 }}" class="btn" style="font-size: 0.625rem;">PREV</a>
-                    {% else %}
-                    <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">PREV</span>
-                    {% endif %}
+            <!-- Fixed Pagination Footer -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-surface); border-top: 1px solid var(--border-color);">
+                {% if page > 1 %}
+                <a href="/dashboard?page={{ page - 1 }}" class="btn" style="font-size: 0.625rem;">PREV</a>
+                {% else %}
+                <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">PREV</span>
+                {% endif %}
 
-                    <span class="mono" style="font-size: 0.75rem;">PAGE {{ page }} OF {{ total_pages }}</span>
+                <span class="mono" style="font-size: 0.75rem;">PAGE {{ page }} OF {{ total_pages }}</span>
 
-                    {% if page < total_pages %}
-                    <a href="/dashboard?page={{ page + 1 }}" class="btn" style="font-size: 0.625rem;">NEXT</a>
-                    {% else %}
-                    <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">NEXT</span>
-                    {% endif %}
-                </div>
+                {% if page < total_pages %}
+                <a href="/dashboard?page={{ page + 1 }}" class="btn" style="font-size: 0.625rem;">NEXT</a>
+                {% else %}
+                <span class="btn disabled" style="font-size: 0.625rem; opacity: 0.3; cursor: not-allowed;">NEXT</span>
+                {% endif %}
             </div>
         </main>
 
@@ -127,6 +135,23 @@
                 row.classList.remove('selected');
             });
             el.classList.add('selected');
+        }
+
+        function filterFlights() {
+            const input = document.getElementById('flight-search');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('flight-table');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const row = tr[i];
+                const text = row.textContent || row.innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
         }
     </script>
 </section>
