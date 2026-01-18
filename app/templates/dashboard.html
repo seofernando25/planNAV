@@ -2,42 +2,9 @@
 
 {% block content %}
 <section class="dashboard-section" style="padding: 0; height: calc(100vh - var(--nav-height)); overflow: hidden;">
-    <div class="dashboard-layout" style="display: grid; grid-template-columns: 320px 1fr 380px; height: 100%; border-top: 1px solid var(--border-color);">
+    <div class="dashboard-layout" style="display: grid; grid-template-columns: 1fr 380px; height: 100%; border-top: 1px solid var(--border-color);">
         
-        <!-- Pane 1: System Metrics Sidebar -->
-        <aside id="metrics-sidebar" style="display: flex; flex-direction: column; border-right: 1px solid var(--border-color); background: var(--bg-surface); overflow-y: auto; padding: 1.5rem; gap: 1rem;">
-            <div style="margin-bottom: 1rem;">
-                <h3 class="mono" style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-muted);">SYSTEM OPERATIONS</h3>
-                <span class="mono" style="font-size: 0.625rem; color: #5cb85c;">● STATUS: NOMINAL</span>
-            </div>
-
-            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Flights</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ stats.total_flights }}</span>
-            </div>
-
-            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Total Passengers</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ "{:,}".format(stats.total_passengers) }}</span>
-            </div>
-
-            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Cargo Ops</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ stats.cargo_flights }}</span>
-            </div>
-
-            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Avg Altitude</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem;">{{ "{:,.0f}".format(stats.avg_altitude) }}<small style="font-size: 0.5em;">FT</small></span>
-            </div>
-
-            <div class="feature-card" style="padding: 1.25rem; background: var(--bg-primary);">
-                <span class="stat-label" style="font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; color: var(--text-muted);">Safety Score</span>
-                <span class="stat-value" style="font-family: var(--font-mono); font-size: 1.5rem; display: block; margin-top: 0.25rem; color: {{ '#d9534f' if stats.safety_score < 90 else '#5cb85c' }};">{{ stats.safety_score }}%</span>
-            </div>
-        </aside>
-
-        <!-- Pane 2: Flight Schedule (Main) -->
+        <!-- Flight Schedule (Main) -->
         <main id="schedule-pane" style="display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary);">
             <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -103,10 +70,10 @@
             </div>
         </main>
 
-        <!-- Pane 3: Telemetry Detail -->
+        <!-- Telemetry Detail -->
         <aside id="telemetry-pane" style="display: flex; flex-direction: column; border-left: 1px solid var(--border-color); background: var(--bg-surface); overflow-y: auto;">
             <div style="padding: 1rem; border-bottom: 1px solid var(--grid-line); background: rgba(var(--text-primary-rgb), 0.02);">
-                <h3 class="mono" style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em;">LIVE TELEMETRY</h3>
+                <h3 class="mono" style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em;">PROFILE</h3>
             </div>
             <div id="telemetry-pane-content" style="padding: 1.5rem;">
                 <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.5; text-align: center; padding-top: 4rem;">
